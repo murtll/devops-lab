@@ -111,10 +111,10 @@ jobs:
 
       - name: Deploy
         run: |
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "mkdir -p ${{ github.repository }} && docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_PASSWORD }}"
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER }} "mkdir -p ${{ github.repository }} && docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_PASSWORD }}"
           scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no docker-compose.configured.yml ${{ secrets.SSH_USER }}@${{ secrets.SERVER }}:${{ github.repository }}/docker-compose.yml
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "cd ${{ github.repository }} && docker compose pull && docker compose up -d"
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "cd ${{ github.repository }} && docker compose exec web 'python manage.py migrate && python manage.py createsuperuser && python manage.py loaddata fixtures.json'"
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER }} "cd ${{ github.repository }} && docker compose pull && docker compose up -d"
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER }} "cd ${{ github.repository }} && docker compose exec web 'python manage.py migrate && python manage.py createsuperuser && python manage.py loaddata fixtures.json'"
 
       - name: Cleanup images
         run: |
