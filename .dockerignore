@@ -1,3 +1,6 @@
-.github/**
+.dockerignore
+.github
+.git
 nginx
-README.md
+run.sh
+ansible

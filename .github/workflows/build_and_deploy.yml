@@ -43,7 +43,7 @@ jobs:
         run: |
           docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_PASSWORD }}
           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ needs.build.outputs.image_name }}:${{ needs.build.outputs.image_tag }}
-          docker run --rm ${{ secrets.DOCKERHUB_USERNAME }}/${{ needs.build.outputs.image_name }}:${{ needs.build.outputs.image_tag }} pytest --tb=line
+          docker run --rm ${{ secrets.DOCKERHUB_USERNAME }}/${{ needs.build.outputs.image_name }}:${{ needs.build.outputs.image_tag }} pytest
         
       - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@master
@@ -107,6 +107,7 @@ jobs:
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "mkdir -p ${{ github.repository }} && docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_PASSWORD }}"
           scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no docker-compose.configured.yml ${{ secrets.SSH_USER }}@${{ secrets.SERVER }}:${{ github.repository }}/docker-compose.yml
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "cd ${{ github.repository }} && docker compose pull && docker compose up -d"
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "cd ${{ github.repository }} && docker compose exec web 'python manage.py migrate && python manage.py createsuperuser && python manage.py loaddata fixtures.json'"
 
       - name: Cleanup images
         run: |

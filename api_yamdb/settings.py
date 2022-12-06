@@ -84,12 +84,12 @@ DATABASES = {
     # Можно лучше: Тк у нас все эти поля обязательные в .env,
     # то меняем тут .get() на просто доступ по ключу
     'default': {
-        'ENGINE': os.environ['DB_ENGINE'],
-        'NAME': os.environ['DB_NAME'],
-        'USER': os.environ['POSTGRES_USER'],
-        'PASSWORD': os.environ['POSTGRES_PASSWORD'],
-        'HOST': os.environ['DB_HOST'],
-        'PORT': os.environ['DB_PORT'],
+        'ENGINE': os.environ.get('DB_ENGINE', 'django.db.backends.postgresql'),
+        'NAME': os.environ.get('DB_NAME', 'postgres'),
+        'USER': os.environ.get('POSTGRES_USER', 'postgres'),
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'postgres'),
+        'HOST': os.environ.get('DB_HOST', 'db'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
 
