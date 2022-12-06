@@ -71,9 +71,9 @@ services:
       PGPORT: ${DB_PORT}
       PGDATA: /var/lib/postgresql/data
     expose:
-      - ${PGPORT}
+      - ${DB_PORT}
     healthcheck:
-      test: pg_isready -d ${POSTGRES_DB}
+      test: pg_isready -d ${DB_NAME}
       interval: 1s
       timeout: 3s
       retries: 5
