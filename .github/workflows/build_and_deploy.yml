@@ -39,13 +39,13 @@ jobs:
     steps:
       - name: Run pytest
         run: |
-          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ needs.build.envs.outputs.image_name }}:${{ needs.build.envs.outputs.image_tag }}
-          docker run --rm -it ${{ secrets.DOCKERHUB_USERNAME }}/${{ needs.build.envs.outputs.image_name }}:${{ needs.build.envs.outputs.image_tag }} pytest --tb=line
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ needs.build.outputs.image_name }}:${{ needs.build.outputs.image_tag }}
+          docker run --rm -it ${{ secrets.DOCKERHUB_USERNAME }}/${{ needs.build.outputs.image_name }}:${{ needs.build.outputs.image_tag }} pytest --tb=line
         
       - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/${{ needs.build.envs.outputs.image_name }}:${{ needs.build.envs.outputs.image_tag }}
+          image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/${{ needs.build.outputs.image_name }}:${{ needs.build.outputs.image_tag }}
           format: sarif
           output: trivy-results.sarif
         continue-on-error: true
@@ -90,8 +90,8 @@ jobs:
           docker compose config > docker-compose.configured.yml
         env:
           ACME_EMAIL: ${{ secrets.ACME_EMAIL }}
-          WEB_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/${{ needs.build.envs.outputs.image_name }}
-          WEB_IMAGE_TAG: ${{ needs.build.envs.outputs.image_tag }}
+          WEB_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/${{ needs.build.outputs.image_name }}
+          WEB_IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
           DB_NAME: ${{ secrets.DB_NAME }}
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
