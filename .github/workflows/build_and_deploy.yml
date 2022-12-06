@@ -90,12 +90,10 @@ jobs:
 
       - name: Run ansible playbook
         run: |
-          ansible-playbook -i ansible/inventory.yml ansible/playbooks/install-docker.yml
+          ansible-playbook --private-key '~/.ssh/deploy_key' --ssh-common-args '-o StrictHostKeyChecking=no' -i ansible/inventory.yml ansible/playbooks/install-docker.yml
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SERVER: ${{ secrets.SERVER }}
-          PRIVATE_KEY_FILE: ~/.ssh/deploy_key
-          SSH_EXTRA_ARGS: '-o StrictHostKeyChecking=no'
 
       - name: Configure docker-compose.yml
         run: |
