@@ -27,10 +27,14 @@ services:
       - traefik-certificates:/certificates
     healthcheck:
       test: traefik healthcheck --ping
-      interval: 2s
+      interval: 10s
       retries: 5
       timeout: 2s
       start_period: 5s
+    logging:
+      driver: json-file
+      options:
+        max-size: 1m
 
   web:
     image: ${WEB_IMAGE}:${WEB_IMAGE_TAG}
@@ -52,12 +56,16 @@ services:
       traefik.http.routers.web.tls: true
       traefik.http.routers.web.tls.certresolver: myresolver
       traefik.http.services.web.loadBalancer.server.port: 8000
-    healthcheck:
-      test: wget --no-verbose --tries=1 --spider http://localhost:8000
-      interval: 10s
-      retries: 3
-      timeout: 1s
-      start_period: 5s
+    # healthcheck:
+    #   test: wget --no-verbose --tries=1 --spider http://localhost:8000
+    #   interval: 10s
+    #   retries: 3
+    #   timeout: 1s
+    #   start_period: 5s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
 
   db:
     image: postgres:12.0-alpine
@@ -78,3 +86,7 @@ services:
       timeout: 3s
       retries: 5
       start_period: 5s
+    logging:
+      driver: json-file
+      options:
+        max-size: 1m
