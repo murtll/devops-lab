@@ -25,7 +25,9 @@ jobs:
       - name: Build and push image
         run: |
           docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_PASSWORD }}
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/${{ steps.envs.outputs.image_name }}:${{ steps.envs.outputs.image_tag }} .
+          docker build . \
+            -t ${{ secrets.DOCKERHUB_USERNAME }}/${{ steps.envs.outputs.image_name }}:${{ steps.envs.outputs.image_tag }} \
+            -t ${{ secrets.DOCKERHUB_USERNAME }}/${{ steps.envs.outputs.image_name }}:latest
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ steps.envs.outputs.image_name }}:${{ steps.envs.outputs.image_tag }}
           
   test:
@@ -39,6 +41,7 @@ jobs:
     steps:
       - name: Run pytest
         run: |
+          docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_PASSWORD }}
           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ needs.build.outputs.image_name }}:${{ needs.build.outputs.image_tag }}
           docker run --rm -it ${{ secrets.DOCKERHUB_USERNAME }}/${{ needs.build.outputs.image_name }}:${{ needs.build.outputs.image_tag }} pytest --tb=line
         
@@ -101,7 +104,7 @@ jobs:
 
       - name: Deploy
         run: |
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "mkdir -p ${{ github.repository }}"
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "mkdir -p ${{ github.repository }} && docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_PASSWORD }}"
           scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no docker-compose.configured.yml ${{ secrets.SSH_USER }}@${{ secrets.SERVER }}:${{ github.repository }}/docker-compose.yml
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "cd ${{ github.repository }} && docker compose pull && docker compose up -d"
 
