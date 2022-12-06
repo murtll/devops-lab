@@ -34,17 +34,18 @@ jobs:
     name: Test
     needs: build
     runs-on: ubuntu-22.04
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
     steps:
       - name: Run pytest
         run: |
           docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_PASSWORD }}
           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ needs.build.outputs.image_name }}:${{ needs.build.outputs.image_tag }}
           docker run --rm ${{ secrets.DOCKERHUB_USERNAME }}/${{ needs.build.outputs.image_name }}:${{ needs.build.outputs.image_tag }} pytest
-        
+
+  trivy:
+    name: Scan image with Trivy
+    needs: build
+    runs-on: ubuntu-22.04
+    steps:
       - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@master
         with:
@@ -93,6 +94,8 @@ jobs:
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SERVER: ${{ secrets.SERVER }}
+          PRIVATE_KEY_FILE: ~/.ssh/deploy_key
+          SSH_EXTRA_ARGS: '-o StrictHostKeyChecking=no'
 
       - name: Configure docker-compose.yml
         run: |

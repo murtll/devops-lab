@@ -4,3 +4,4 @@
 nginx
 run.sh
 ansible
+docker-compose.yml
