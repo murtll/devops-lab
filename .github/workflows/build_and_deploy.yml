@@ -1,0 +1,108 @@
+name: Build and deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-22.04
+    environment: master
+    outputs:
+      image_name: ${{ steps.envs.outputs.image_name }}
+      image_tag: ${{ steps.envs.outputs.image_tag }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - run: |
+          echo image_name=${GITHUB_REPOSITORY##*/} >> $GITHUB_OUTPUT
+          echo image_tag=$(echo $GITHUB_SHA | cut -c 1-8) >> $GITHUB_OUTPUT
+        id: envs
+
+      - name: Build and push image
+        run: |
+          docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_PASSWORD }}
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/${{ steps.envs.outputs.image_name }}:${{ steps.envs.outputs.image_tag }} .
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ steps.envs.outputs.image_name }}:${{ steps.envs.outputs.image_tag }}
+          
+  test:
+    name: Test
+    needs: build
+    runs-on: ubuntu-22.04
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - name: Run pytest
+        run: |
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ needs.build.envs.outputs.image_name }}:${{ needs.build.envs.outputs.image_tag }}
+          docker run --rm -it ${{ secrets.DOCKERHUB_USERNAME }}/${{ needs.build.envs.outputs.image_name }}:${{ needs.build.envs.outputs.image_tag }} pytest --tb=line
+        
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/${{ needs.build.envs.outputs.image_name }}:${{ needs.build.envs.outputs.image_tag }}
+          format: sarif
+          output: trivy-results.sarif
+        continue-on-error: true
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: trivy-results.sarif
+
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-22.04
+    environment:
+      name: master
+      url: https://1132359-co62359.tw1.ru/
+    needs: test
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Ansible
+        run: |
+          sudo apt-add-repository ppa:ansible/ansible
+          sudo apt update
+          sudo apt install ansible
+
+      - name: Prepare SSH
+        run: |
+          echo ${{ secrets.DEPLOY_KEY }} > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+      - name: Run ansible playbook
+        run: |
+          ansible-playbook -i ansible/inventory.yml ansible/playbooks/install-docker.yml
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SERVER: ${{ secrets.SERVER }}
+
+      - name: Configure docker-compose.yml
+        run: |
+          docker compose config > docker-compose.configured.yml
+        env:
+          ACME_EMAIL: ${{ secrets.ACME_EMAIL }}
+          WEB_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/${{ needs.build.envs.outputs.image_name }}
+          WEB_IMAGE_TAG: ${{ needs.build.envs.outputs.image_tag }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+
+      - name: Deploy
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "mkdir -p ${{ github.repository }}"
+          scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no docker-compose.configured.yml ${{ secrets.SSH_USER }}@${{ secrets.SERVER }}:${{ github.repository }}/docker-compose.yml
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "cd ${{ github.repository }} && docker compose pull && docker compose up -d"
+
+      - name: Cleanup images
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "docker images prune -af"
