@@ -61,7 +61,9 @@ jobs:
     environment:
       name: master
       url: https://1132359-co62359.tw1.ru/
-    needs: test
+    needs:
+      - test
+      - build
     steps:
       - uses: actions/checkout@v2
 

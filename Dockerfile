@@ -8,6 +8,6 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-ENTRYPOINT gunicorn api_yamdb.wsgi:application
+ENTRYPOINT [ "gunicorn", "api_yamdb.wsgi:application" ]
 
-CMD --bind 0.0.0.0:8000
+CMD [ "--bind", "0.0.0.0:8000" ]
