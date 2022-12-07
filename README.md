@@ -1,4 +1,4 @@
-https://github.com/murtll/devops-lab/actions/workflows/build_and_deploy.yml/badge.svg
+![Workflow status](https://github.com/murtll/devops-lab/actions/workflows/build_and_deploy.yml/badge.svg)
 
 ### Проект
 REST API для сервиса YaMDb — базы отзывов о фильмах, книгах и музыке. Написан на Django Rest Framework.
