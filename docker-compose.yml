@@ -1,7 +1,7 @@
 version: '3.9'
 
 volumes:
-  postgres_data:
+  postgres-data:
   traefik-certificates:
 
 services:
@@ -41,8 +41,6 @@ services:
   web:
     image: ${WEB_IMAGE}:${WEB_IMAGE_TAG}
     restart: always
-    command: |
-      python manage.py migrate && gunicorn api_yamdb.wsgi:application --bind 0.0.0.0:8000
     environment:
       DB_ENGINE: django.db.backends.postgresql
       DB_NAME: ${DB_NAME} 
@@ -78,7 +76,7 @@ services:
     image: postgres:12.0-alpine
     restart: always
     volumes:
-      - postgres_data:/var/lib/postgresql/data/
+      - postgres-data:/var/lib/postgresql/data/
     environment:
       POSTGRES_USER: ${DB_USER} 
       POSTGRES_PASSWORD: ${DB_PASSWORD} 

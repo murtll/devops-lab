@@ -148,7 +148,8 @@ jobs:
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER }} "mkdir -p ${{ github.repository }}"
           scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no docker-compose.configured.yml ${{ secrets.SSH_USER }}@${{ secrets.SERVER }}:${{ github.repository }}/docker-compose.yml
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER }} "cd ${{ github.repository }} && docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_PASSWORD }} && docker compose pull && docker compose up -d"
-#          sleep 10
+          sleep 5
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER }} "cd ${{ github.repository }} && docker compose exec web bash -c 'python manage.py migrate'"
 #          CONTAINER_STATUS=$(ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER }} "cd ${{ github.repository }} && docker compose ps | grep web | awk '{ print \$1 }' | xargs docker inspect" | jq -r .[].State.Health.Status)
 #          if [[ "$CONTAINER_STATUS" != "healthy" ]]; then 
 #            
@@ -176,5 +177,5 @@ jobs:
 
       - name: Cleanup images
         run: |
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER }} "docker images prune -af"
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER }} "docker image prune -af"
         continue-on-error: true
