@@ -1,39 +1,37 @@
-# YaMDb
-![yamdb_final_workflow](https://github.com/Roxe322/yamdb_final/workflows/yamdb/badge.svg) 
-
+### Проект
 REST API для сервиса YaMDb — базы отзывов о фильмах, книгах и музыке. Написан на Django Rest Framework.
 
+### Деплой через Github Actions
 
-### Вам понадобятся
+Необходимые секреты:
 
-Для установки и сборки приложения понадобится Docker, инструкцию по установке можно найти [здесь](https://docs.docker.com/get-docker/)
+Environment: `master`
+* ACME_EMAIL - почта для аккаунта Let's Encrypt (автополучение сертификатов)
+* DB_HOST
+* DB_NAME
+* DB_PASSWORD
+* DB_PORT
+* DB_USER
+* DEPLOY_HOST - хост, на котором будет доступен сервис
+* DEPLOY_KEY - приватный SSH-ключ для доступа на сервер
+* SERVER - IP сервера на котором будет развертываться сервис
+* SSH_USER - пользователь который будет использоваться на сервере
 
-### Установка и запуск
+Repository-level:
+* DOCKERHUB_PASSWORD
+* DOCKERHUB_USERNAME
+* TELEGRAM_TO - id чата в Telegram, куда будут отправляться уведомления о статусе пайплайна
+* TELEGRAM_TOKEN - токен бота, который будет отправлять уведомления
 
-1. Склонируйте репозиторий на локальный компьютер 
-2. В директории ```api_yamdb``` создайте файл ```.env``` и пропишите в нем: 
-``` 
-DB_ENGINE=django.db.backends.postgresql 
-DB_NAME=postgres 
-DB_USER=postgres 
-DB_PASSWORD=postgres 
-DB_HOST=db 
-DB_PORT=5432 
-``` 
-3. В корневой директории выполните команду ```docker-compose up```, запустится контейнер 
-4. В новой вкладке терминала выполните команду ```docker container ls``` и скопируйте ID контейнера ```api_yamdb_web``` 
-5. Перейдите в контейнер командой ```docker container exec -it <CONTAINER ID> bash . ```
-6. Внутри контейнера выполните миграции командой ```python manage.py migrate```
-7. Создайте суперпользователя командой ```python manage.py createsuperuser``` 
-8. Заполните базу тестовыми данными, выполнив команду ```python manage.py loaddata fixtures.json``` 
+После первого (чистового) деплоя потребуется подключиться на сервер, зайти в папку с проектом и выполнить команды
+1. Создайте суперпользователя командой ```docker compose exec web python manage.py createsuperuser``` 
+2. Заполните базу тестовыми данными, выполнив команду ```docker compose exec web python manage.py loaddata fixtures.json``` 
 
 
 ## Использованные технологии
 
 * [Django REST Framework](https://www.django-rest-framework.org/) - Веб-фреймворк
-* [Docker](https://www.docker.com/) - Управление сборкой и запуском приложения
+* [Docker & Docker Compose](https://www.docker.com/) - Управление сборкой и запуском приложения
+* [Ansible](https://www.ansible.com/) - Система управления конфигурациями серверов
+* [Traefik](https://www.traefik.io/) - Веб-сервер
 * [PostgreSQL](https://www.postgresql.org/) - СУБД
-
-## Автор
-
-* **Артем Коломацкий** - [Roxe322](https://github.com/Roxe322)
