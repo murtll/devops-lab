@@ -29,6 +29,16 @@ jobs:
             -t ${{ secrets.DOCKERHUB_USERNAME }}/${{ steps.envs.outputs.image_name }}:latest
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ steps.envs.outputs.image_name }}:${{ steps.envs.outputs.image_tag }}
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ steps.envs.outputs.image_name }}:latest
+
+      - name: Failure notify
+        if: ${{ failure() }}
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          message: |
+            ❌ ${{ github.actor }} pushed changes and job ${{ github.job }} failed.
+            see workflow run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
    
   test:
     name: Test
@@ -40,6 +50,16 @@ jobs:
           docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_PASSWORD }}
           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ needs.build.outputs.image_name }}:${{ needs.build.outputs.image_tag }}
           docker run --rm ${{ secrets.DOCKERHUB_USERNAME }}/${{ needs.build.outputs.image_name }}:${{ needs.build.outputs.image_tag }} pytest
+
+      - name: Failure notify
+        if: ${{ failure() }}
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          message: |
+            ❌ ${{ github.actor }} pushed changes and job ${{ github.job }} failed.
+            see workflow run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
   trivy:
     name: Scan image with Trivy
@@ -63,6 +83,16 @@ jobs:
             -H "X-GitHub-Api-Version: 2022-11-28" \
             https://api.github.com/repos/${{ github.repository }}/code-scanning/sarifs \
             -d "{\"commit_sha\":\"${{ github.sha }}\",\"ref\":\"${{ github.ref }}\",\"sarif\":\"$(gzip -c trivy.sarif | base64 -w0)\"}"
+      
+      - name: Failure notify
+        if: ${{ failure() }}
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          message: |
+            ❌ ${{ github.actor }} pushed changes and job ${{ github.job }} failed.
+            see workflow run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
   deploy:
     name: Deploy
@@ -109,12 +139,40 @@ jobs:
           DB_PORT: ${{ secrets.DB_PORT }}
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
 
+      - name: Install jq
+        run: |
+          sudo apt update -y && sudo apt install -y jq
+
       - name: Deploy
         run: |
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER }} "mkdir -p ${{ github.repository }} && docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_PASSWORD }}"
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER }} "mkdir -p ${{ github.repository }}"
           scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no docker-compose.configured.yml ${{ secrets.SSH_USER }}@${{ secrets.SERVER }}:${{ github.repository }}/docker-compose.yml
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER }} "cd ${{ github.repository }} && docker compose pull && docker compose up -d"
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER }} "cd ${{ github.repository }} && docker compose exec web bash -c 'python manage.py migrate && python manage.py loaddata fixtures.json'"
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER }} "cd ${{ github.repository }} && docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_PASSWORD }} && docker compose pull && docker compose up -d"
+#          sleep 10
+#          CONTAINER_STATUS=$(ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER }} "cd ${{ github.repository }} && docker compose ps | grep web | awk '{ print \$1 }' | xargs docker inspect" | jq -r .[].State.Health.Status)
+#          if [[ "$CONTAINER_STATUS" != "healthy" ]]; then 
+#            
+#          else
+
+      - name: Success notify
+        if: ${{ success() }}
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          message: |
+            ✅ ${{ github.actor }} pushed changes and job ${{ github.job }} succeed.
+            see workflow run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+      - name: Failure notify
+        if: ${{ failure() }}
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          message: |
+            ❌ ${{ github.actor }} pushed changes and job ${{ github.job }} failed.
+            see workflow run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
       - name: Cleanup images
         run: |
